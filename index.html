@@ -5,32 +5,406 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
-    <link rel="stylesheet" href="style.css"
+    <link rel="stylesheet" href="style.css">
+    
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js"></script>
+    <script src="https://d3js.org/d3.v4.js"></script>
+   
 </head>
 <body>
+
+    <style>
+        body {
+            /* background-image: url("moroccan-flower.jpg");
+            background-color: #cccccc; */
+        }
+    </style>
+    
     <div class ="container">
-        <div style="background: tomato">
-            <svg style="height: 100%;width: 100%;" onload="console.log('a')" ></svg>
-            
+        <div>
+            <div style="display:inline-block;" id="legend"></div>
+            <div style="display:inline-block; float:left" id="container2"></div>
         </div>
 
 
-        <div style="background: royalblue">
-                <svg style="height: 100%;width: 100%;" onload="console.log('b')"></svg>
+        <div id="dataviz_brushScatter">
+            <style>
+                .selected {
+                    opacity: 1 !important;
+                    stroke: black;
+                    stroke-width: 1px;
+                }
+            </style>
+               
         </div>
 
 
-        <div style="background: yellow">
-                <svg style="height: 100%;width: 100%;" onload="console.log('c')"></svg>
-        
+        <div >
+            <div class="my_dataviz">aaaa</div>
+
         </div>
 
-        <div style="background: palevioletred">
-                <svg style="height: 100%;width: 100%;" onload="console.log('d')"></svg>
+        <div style="background: palevioletred">aaa
+                
         
         </div>
 
     </div>
+
+
+    <script>
+       // console.log('start')
+      
+        var correlationMatrix = [
+            [1.0, 0.44, 0.53, 0.95, -0.25, -0.28, -0.55, -0.09],
+            [0.44, 1.0, 0.93, 0.32, -0.41, -0.68, -0.68, -0.49],
+            [0.53, 0.93, 1.0, 0.42, -0.51, -0.60, -0.80, -0.31],
+            [0.95, 0.32, 0.42, 1.0, -0.18, -0.20, -0.48, -0.05],
+            [-0.25, -0.41, -0.51, -0.18, 1.0, 0.18, 0.48, -0.31],
+            [-0.28, -0.68, -0.60, -0.20, 0.18, 1.0, 0.40, 0.68],
+            [-0.55, -0.68, -0.80, -0.48, 0.48, 0.40, 1.0, 0.04],
+            [-0.09, -0.49, -0.31, -0.053, -0.31, 0.68, 0.04, 1.0]
+        ]
+
+        var labels = ['SAT Takers', 'Reading Score', 'Math Score', 'Enrollment', 'Disability', 'Overage', 'Minority', 'ELL'];
+
+        Matrix({
+            container: '#container2',
+            data: correlationMatrix,
+            labels: labels,
+            start_color: '#434BC4',
+            end_color: '#DF4E4E'
+        });
+        function Matrix(options) {
+            var margin = { top: 10, right: 100, bottom: 100, left: 100 },
+                width = 250,
+                height = 250,
+                data = options.data,
+                container = options.container,
+                labelsData = options.labels,
+                startColor = options.start_color,
+                endColor = options.end_color;
+
+            var widthLegend = 100;
+
+            if (!data) {
+                throw new Error('Please pass data');
+            }
+
+            if (!Array.isArray(data) || !data.length || !Array.isArray(data[0])) {
+                throw new Error('It should be a 2-D array');
+            }
+            //        console.log('start')
+
+            var maxValue = d3.max(data, function (layer) { return d3.max(layer, function (d) { return d; }); });
+            var minValue = d3.min(data, function (layer) { return d3.min(layer, function (d) { return d; }); });
+
+            var numrows = data.length;
+            var numcols = data[0].length;
+
+            var svg = d3.select(container).append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+            var background = svg.append("rect")
+                .style("stroke", "black")
+                .style("stroke-width", "2px")
+                .attr("width", width)
+                .attr("height", height);
+
+            var x = d3.scale.ordinal()
+                .domain(d3.range(numcols))
+                .rangeBands([0, width]);
+
+            var y = d3.scale.ordinal()
+                .domain(d3.range(numrows))
+                .rangeBands([0, height]);
+
+            var colorMap = d3.scale.linear()
+                .domain([minValue, maxValue])
+                .range([startColor, endColor]);
+
+            var row = svg.selectAll(".row")
+                .data(data)
+                .enter().append("g")
+                .attr("class", "row")
+                .attr("transform", function (d, i) { return "translate(0," + y(i) + ")"; });
+
+            var cell = row.selectAll(".cell")
+                .data(function (d) { return d; })
+                .enter().append("g")
+                .attr("class", "cell")
+                .attr("transform", function (d, i) { return "translate(" + x(i) + ", 0)"; });
+
+            cell.append('rect')
+                .attr("width", x.rangeBand())
+                .attr("height", y.rangeBand())
+                .style("stroke-width", 0);
+
+            cell.append("text")
+                .attr("dy", ".32em")
+                .attr("x", x.rangeBand() / 2)
+                .attr("y", y.rangeBand() / 2)
+                .attr("text-anchor", "middle")
+                .style("fill", function (d, i) { return d >= maxValue / 2 ? 'white' : 'black'; })
+                .text(function (d, i) { return d; });
+
+            row.selectAll(".cell")
+                .data(function (d, i) { return data[i]; })
+                .style("fill", colorMap);
+
+            var labels = svg.append('g')
+                .attr('class', "labels");
+
+            var columnLabels = labels.selectAll(".column-label")
+                .data(labelsData)
+                .enter().append("g")
+                .attr("class", "column-label")
+                .attr("transform", function (d, i) { return "translate(" + x(i) + "," + height + ")"; });
+          //  console.log('start')
+
+            columnLabels.append("line")
+                .style("stroke", "black")
+                .style("stroke-width", "1px")
+                .attr("x1", x.rangeBand() / 2)
+                .attr("x2", x.rangeBand() / 2)
+                .attr("y1", 0)
+                .attr("y2", 5);
+
+            columnLabels.append("text")
+                .attr("x", 0)
+                .attr("y", y.rangeBand() / 2)
+                .attr("dy", ".82em")
+                .attr("text-anchor", "end")
+                .attr("transform", "rotate(-60)")
+                .text(function (d, i) { return d; });
+
+            var rowLabels = labels.selectAll(".row-label")
+                .data(labelsData)
+                .enter().append("g")
+                .attr("class", "row-label")
+                .attr("transform", function (d, i) { return "translate(" + 0 + "," + y(i) + ")"; });
+
+            rowLabels.append("line")
+                .style("stroke", "black")
+                .style("stroke-width", "1px")
+                .attr("x1", 0)
+                .attr("x2", -5)
+                .attr("y1", y.rangeBand() / 2)
+                .attr("y2", y.rangeBand() / 2);
+
+            rowLabels.append("text")
+                .attr("x", -8)
+                .attr("y", y.rangeBand() / 2)
+                .attr("dy", ".32em")
+                .attr("text-anchor", "end")
+                .text(function (d, i) { return d; });
+
+            var key = d3.select("#legend")
+                .append("svg")
+                .attr("width", widthLegend)
+                .attr("height", height + margin.top + margin.bottom);
+
+            var legend = key
+                .append("defs")
+                .append("svg:linearGradient")
+                .attr("id", "gradient")
+                .attr("x1", "100%")
+                .attr("y1", "0%")
+                .attr("x2", "100%")
+                .attr("y2", "100%")
+                .attr("spreadMethod", "pad");
+
+            legend.append("stop")
+                .attr("offset", "0%")
+                .attr("stop-color", endColor)
+                .attr("stop-opacity", 1);
+
+            legend.append("stop")
+                .attr("offset", "100%")
+                .attr("stop-color", startColor)
+                .attr("stop-opacity", 1);
+
+            key.append("rect")
+                .attr("width", widthLegend / 2 - 10)
+                .attr("height", height)
+                .style("fill", "url(#gradient)")
+                .attr("transform", "translate(0," + margin.top + ")");
+
+            var y = d3.scale.linear()
+                .range([height, 0])
+                .domain([minValue, maxValue]);
+
+            var yAxis = d3.svg.axis()
+                .scale(y)
+                .orient("right");
+
+            key.append("g")
+                .attr("class", "y axis")
+                .attr("transform", "translate(41," + margin.top + ")")
+                .call(yAxis)
+        }
+    
+
+    </script>
+
+
+<script>
+    // set the dimensions and margins of the graph
+        //console.log("hello0")
+
+    var margin = { top: 10, right: 30, bottom: 30, left: 60 },
+        width = 360 - margin.left - margin.right,
+        height = 300 - margin.top - margin.bottom;
+
+    // append the svg object to the body of the page
+    var svg = d3.select("#dataviz_brushScatter")
+        .append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform",
+            "translate(" + margin.left + "," + margin.top + ")");
+
+    //Read the data
+   // console.log("hello1")
+    d3.csv("/DataPlots copy/8Col.csv", function (data) {
+       // console.log(data)
+       // console.log("hello2")
+
+        // Add X axis
+        var x = d3.scaleLinear()
+            .domain([0, 1])
+            .range([0, width]);
+       //         console.log("hello")
+
+        svg.append("g")
+            .attr("transform", "translate(0," + height + ")")
+            .call(d3.axisBottom(x));
+
+        // Add Y axis
+        var y = d3.scaleLinear()
+            .domain([300, 800])
+            .range([height, 0]);
+
+        svg.append("g")
+            .call(d3.axisLeft(y));
+
+        //console.log("hello")
+
+        // Color scale: give me a specie name, I return a color
+        // var color = d3.scaleOrdinal()
+        //     .domain(["setosa", "versicolor", "virginica"])
+        //     .range(["#440154ff", "#21908dff", "#fde725ff"])
+
+        // Add dots
+        var myCircle = svg.append('g')
+            .selectAll("circle")
+            .data(data)
+            .enter()
+            .append("circle")
+            .attr("cx", function (d) { return x(d["% Black or Hispanic"]); })
+            .attr("cy", function (d) { return y(d["SAT Math Avg. Score"]); })
+            .attr("r", 8)
+            .style("fill", "#21908dff");
+           
+
+        // Add brushing
+        svg.call(d3.brush()                 // Add the brush feature using the d3.brush function
+                .extent([[0, 0], [width, height]]) // initialise the brush area: start at 0,0 and finishes at width,height: it means I select the whole graph area
+                .on("start brush", updateChart) // Each time the brush selection changes, trigger the 'updateChart' function
+            )
+
+        // Function that is triggered when brushing is performed
+        function updateChart() {
+            extent = d3.event.selection
+            myCircle.classed("selected", function (d) { return isBrushed(extent, x(d["% Black or Hispanic"]), y(d["SAT Math Avg. Score"])) })
+        }
+
+        // A function that return TRUE or FALSE according if a dot is in the selection or not
+        function isBrushed(brush_coords, cx, cy) {
+            var x0 = brush_coords[0][0],
+                x1 = brush_coords[1][0],
+                y0 = brush_coords[0][1],
+                y1 = brush_coords[1][1];
+            return x0 <= cx && cx <= x1 && y0 <= cy && cy <= y1;    // This return TRUE or FALSE depending on if the points is in the selected area
+        }
+
+    })
+
+</script>
+<script>
+
+    // set the dimensions and margins of the graph
+    var margin = { top: 10, right: 30, bottom: 30, left: 40 },
+        width = 350 - margin.left - margin.right,
+        height = 300 - margin.top - margin.bottom;
+
+    // append the svg object to the body of the page
+    var svg = d3.select(".my_dataviz")
+        .append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform",
+            "translate(" + margin.left + "," + margin.top + ")");
+
+    // get the data
+    d3.csv("/DataPlots copy/8Col.csv", function (data) {
+        console.log(data)
+        // X axis: scale and draw:
+        var x = d3.scaleLinear()
+            .domain([0, 1])     // can use this instead of 1000 to have the max of data: d3.max(data, function(d) { return +d.price })
+            .range([0, width]);
+        svg.append("g")
+            .attr("transform", "translate(0," + height + ")")
+            .call(d3.axisBottom(x));
+
+        // set the parameters for the histogram
+        var histogram = d3.histogram()
+            .value(function (d) { return d['% Black or Hispanic']; })   // I need to give the vector of value
+            .domain(x.domain())  // then the domain of the graphic
+            .thresholds(x.ticks(70)); // then the numbers of bins
+
+        // And apply this function to data to get the bins
+        var bins = histogram(data);
+
+        // Y axis: scale and draw:
+        var y = d3.scaleLinear()
+            .range([height, 0]);
+        y.domain([0, d3.max(bins, function (d) { return d.length; })]);   // d3.hist has to be called before the Y axis obviously
+        svg.append("g")
+            .call(d3.axisLeft(y));
+
+        // append the bar rectangles to the svg element
+        svg.selectAll("rect")
+            .data(bins)
+            .enter()
+            .append("rect")
+            .attr("x", 1)
+            .attr("transform", function (d) { return "translate(" + x(d.x0) + "," + y(d.length) + ")"; })
+            .attr("width", function (d) { return x(d.x1) - x(d.x0) - 1; })
+            .attr("height", function (d) { return height - y(d.length); })
+            .style("fill", function (d) { if (d.x0 < 140) { return "orange" } else { return "#69b3a2" } })
+
+        // Append a vertical line to highlight the separation
+        svg .append("line")
+            .attr("x1", x(140))
+            .attr("x2", x(140))
+            .attr("y1", y(0))
+            .attr("y2", y(1600))
+            .attr("stroke", "grey")
+            .attr("stroke-dasharray", "4")
+        svg .append("text")
+            .attr("x", x(190))
+            .attr("y", y(1400))
+            .text("threshold: 140")
+            .style("font-size", "15px")
+
+    });
+</script>  -->
     
 </body>
 </html>
