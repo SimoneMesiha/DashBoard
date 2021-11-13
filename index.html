@@ -20,36 +20,195 @@
         }
     </style>
     
-    <div class ="container">
-        <div>
+
+    <!-- <div class ="container"> -->
+        <div id="nw">
             <div style="display:inline-block;" id="legend"></div>
             <div style="display:inline-block; float:left" id="container2"></div>
         </div>
 
+        <div id="ne" class="dataviz_brushScatter">
+                        <div style="display:inline-block; float:left" id="container4"></div>
 
-        <div id="dataviz_brushScatter">
-            <style>
-                .selected {
-                    opacity: 1 !important;
-                    stroke: black;
-                    stroke-width: 1px;
-                }
-            </style>
-               
-        </div>
-
-
-        <div >
-            <div class="my_dataviz">aaaa</div>
+                <style>
+                    .selected {
+                        opacity: 1 !important;
+                        stroke: black;
+                        stroke-width: 1px;
+                    }
+                </style>
 
         </div>
 
-        <div style="background: palevioletred">aaa
+
+        <div id="sw" class="my_dataviz" >
+            <div style="display:inline-block; float:left" id="container3"></div>
+
+        </div>
+
+        <div id = "se" class="blabla">
                 
         
         </div>
-
+    
     </div>
+
+    <!-- </div> -->
+
+<script>
+
+            var margin = { top: 10, right: 30, bottom: 30, left: 60 },
+                    width = 360 - margin.left - margin.right,
+                    height = 300 - margin.top - margin.bottom;
+
+                // append the svg object to the body of the page
+                var svg2 = d3.select("#container4")
+                    .append("svg").attr("class","scatterplot")
+                    .attr("width", width + margin.left + margin.right)
+                    .attr("height", height + margin.top + margin.bottom)
+                    .append("g")
+                    .attr("transform",
+                        "translate(" + margin.left + "," + margin.top + ")");
+
+                //Read the data
+                // console.log("hello1")
+                d3.csv("/DataPlots copy/8Col.csv", function (data) {
+                    // console.log(data)
+                    // console.log("hello2")
+
+                    // Add X axis
+                    var x = d3.scaleLinear()
+                        .domain([0, 1])
+                        .range([0, width]);
+                    //         console.log("hello")
+
+                    svg2.append("g")
+                        .attr("transform", "translate(0," + height + ")")
+                        .call(d3.axisBottom(x));
+
+                    // Add Y axis
+                    var y = d3.scaleLinear()
+                        .domain([300, 800])
+                        .range([height, 0]);
+
+                    svg2.append("g")
+                        .call(d3.axisLeft(y));
+
+                    //console.log("hello")
+
+                    // Color scale: give me a specie name, I return a color
+                    // var color = d3.scaleOrdinal()
+                    //     .domain(["setosa", "versicolor", "virginica"])
+                    //     .range(["#440154ff", "#21908dff", "#fde725ff"])
+
+                    // Add dots
+                    var myCircle = svg2.append('g')
+                        .selectAll("circle")
+                        .data(data)
+                        .enter()
+                        .append("circle")
+                        .attr("cx", function (d) { return x(d["% Black or Hispanic"]); })
+                        .attr("cy", function (d) { return y(d["SAT Math Avg. Score"]); })
+                        .attr("r", 8)
+                        .style("fill", "#21908dff");
+
+
+                    // Add brushing
+                    svg2.call(d3.brush()                 // Add the brush feature using the d3.brush function
+                        .extent([[0, 0], [width, height]]) // initialise the brush area: start at 0,0 and finishes at width,height: it means I select the whole graph area
+                        .on("start brush", updateChart) // Each time the brush selection changes, trigger the 'updateChart' function
+                    )
+
+                    // Function that is triggered when brushing is performed
+                    function updateChart() {
+                        extent = d3.event.selection
+                        myCircle.classed("selected", function (d) { return isBrushed(extent, x(d["% Black or Hispanic"]), y(d["SAT Math Avg. Score"])) })
+                    }
+
+                    // A function that return TRUE or FALSE according if a dot is in the selection or not
+                    function isBrushed(brush_coords, cx, cy) {
+                        var x0 = brush_coords[0][0],
+                            x1 = brush_coords[1][0],
+                            y0 = brush_coords[0][1],
+                            y1 = brush_coords[1][1];
+                        return x0 <= cx && cx <= x1 && y0 <= cy && cy <= y1;    // This return TRUE or FALSE depending on if the points is in the selected area
+                    }
+
+                })
+</script>
+
+
+<script>
+
+    // set the dimensions and margins of the graph  
+    var margin = { top: 10, right: 30, bottom: 30, left: 40 },
+        width = 350 - margin.left - margin.right,
+        height = 300 - margin.top - margin.bottom;
+
+    // append the svg object to the body of the page
+    var svg = d3.select("#container3")
+        .append("svg").attr("class","histtt")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform",
+            "translate(" + margin.left + "," + margin.top + ")");
+
+    // get the data
+    d3.csv("/DataPlots copy/8Col.csv", function (data) {
+        console.log(data)
+        // X axis: scale and draw:
+        var x = d3.scaleLinear()
+            .domain([0, 1])     // can use this instead of 1000 to have the max of data: d3.max(data, function(d) { return +d.price })
+            .range([0, width]);
+        svg.append("g")
+            .attr("transform", "translate(0," + height + ")")
+            .call(d3.axisBottom(x));
+
+        // set the parameters for the histogram
+        var histogram = d3.histogram()
+            .value(function (d) { return d['% Black or Hispanic']; })   // I need to give the vector of value
+            .domain(x.domain())  // then the domain of the graphic
+            .thresholds(x.ticks(70)); // then the numbers of bins
+
+        // And apply this function to data to get the bins
+        var bins = histogram(data);
+
+        // Y axis: scale and draw:
+        var y = d3.scaleLinear()
+            .range([height, 0]);
+        y.domain([0, d3.max(bins, function (d) { return d.length; })]);   // d3.hist has to be called before the Y axis obviously
+        svg.append("g")
+            .call(d3.axisLeft(y));
+
+        // append the bar rectangles to the svg element
+        svg.selectAll("rect")
+            .data(bins)
+            .enter()
+            .append("rect")
+            .attr("x", 1)
+            .attr("transform", function (d) { return "translate(" + x(d.x0) + "," + y(d.length) + ")"; })
+            .attr("width", function (d) { return x(d.x1) - x(d.x0) - 1; })
+            .attr("height", function (d) { return height - y(d.length); })
+            .style("fill", function (d) { if (d.x0 > 0.8) { return "orange" } else { return "#69b3a2" } })
+
+        // Append a vertical line to highlight the separation
+        svg.append("line")
+            .attr("x1", x(140))
+            .attr("x2", x(140))
+            .attr("y1", y(0))
+            .attr("y2", y(1600))
+            .attr("stroke", "grey")
+            .attr("stroke-dasharray", "4")
+        svg.append("text")
+            .attr("x", x(190))
+            .attr("y", y(1400))
+            .text("threshold: 140")
+            .style("font-size", "15px")
+
+    });
+</script> -->
+
 
 
     <script>
@@ -102,7 +261,7 @@
             var numrows = data.length;
             var numcols = data[0].length;
 
-            var svg = d3.select(container).append("svg")
+            var svg = d3.select(container).append("svg").attr("class","hello")
                 .attr("width", width + margin.left + margin.right)
                 .attr("height", height + margin.top + margin.bottom)
                 .append("g")
@@ -246,12 +405,26 @@
                 .attr("transform", "translate(41," + margin.top + ")")
                 .call(yAxis)
         }
-    
+
+
+        
+        
 
     </script>
 
 
-<script>
+
+
+
+
+
+
+
+
+
+
+
+ <!-- <script>
     // set the dimensions and margins of the graph
         //console.log("hello0")
 
@@ -260,7 +433,7 @@
         height = 300 - margin.top - margin.bottom;
 
     // append the svg object to the body of the page
-    var svg = d3.select("#dataviz_brushScatter")
+    var svg = d3.select(".dataviz_brushScatter")
         .append("svg")
         .attr("width", width + margin.left + margin.right)
         .attr("height", height + margin.top + margin.bottom)
@@ -332,79 +505,13 @@
             return x0 <= cx && cx <= x1 && y0 <= cy && cy <= y1;    // This return TRUE or FALSE depending on if the points is in the selected area
         }
 
-    })
+    }) 
 
-</script>
-<script>
+</script> -->
 
-    // set the dimensions and margins of the graph
-    var margin = { top: 10, right: 30, bottom: 30, left: 40 },
-        width = 350 - margin.left - margin.right,
-        height = 300 - margin.top - margin.bottom;
 
-    // append the svg object to the body of the page
-    var svg = d3.select(".my_dataviz")
-        .append("svg")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom)
-        .append("g")
-        .attr("transform",
-            "translate(" + margin.left + "," + margin.top + ")");
 
-    // get the data
-    d3.csv("/DataPlots copy/8Col.csv", function (data) {
-        console.log(data)
-        // X axis: scale and draw:
-        var x = d3.scaleLinear()
-            .domain([0, 1])     // can use this instead of 1000 to have the max of data: d3.max(data, function(d) { return +d.price })
-            .range([0, width]);
-        svg.append("g")
-            .attr("transform", "translate(0," + height + ")")
-            .call(d3.axisBottom(x));
 
-        // set the parameters for the histogram
-        var histogram = d3.histogram()
-            .value(function (d) { return d['% Black or Hispanic']; })   // I need to give the vector of value
-            .domain(x.domain())  // then the domain of the graphic
-            .thresholds(x.ticks(70)); // then the numbers of bins
-
-        // And apply this function to data to get the bins
-        var bins = histogram(data);
-
-        // Y axis: scale and draw:
-        var y = d3.scaleLinear()
-            .range([height, 0]);
-        y.domain([0, d3.max(bins, function (d) { return d.length; })]);   // d3.hist has to be called before the Y axis obviously
-        svg.append("g")
-            .call(d3.axisLeft(y));
-
-        // append the bar rectangles to the svg element
-        svg.selectAll("rect")
-            .data(bins)
-            .enter()
-            .append("rect")
-            .attr("x", 1)
-            .attr("transform", function (d) { return "translate(" + x(d.x0) + "," + y(d.length) + ")"; })
-            .attr("width", function (d) { return x(d.x1) - x(d.x0) - 1; })
-            .attr("height", function (d) { return height - y(d.length); })
-            .style("fill", function (d) { if (d.x0 < 140) { return "orange" } else { return "#69b3a2" } })
-
-        // Append a vertical line to highlight the separation
-        svg .append("line")
-            .attr("x1", x(140))
-            .attr("x2", x(140))
-            .attr("y1", y(0))
-            .attr("y2", y(1600))
-            .attr("stroke", "grey")
-            .attr("stroke-dasharray", "4")
-        svg .append("text")
-            .attr("x", x(190))
-            .attr("y", y(1400))
-            .text("threshold: 140")
-            .style("font-size", "15px")
-
-    });
-</script>  -->
     
 </body>
 </html>
