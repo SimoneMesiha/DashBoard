@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="style.css">
     
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js"></script>
-    <script src="https://d3js.org/d3.v4.js"></script>
+
    
 </head>
 <body>
@@ -42,6 +42,9 @@
 
 
         <div id="sw" class="my_dataviz" >
+                  
+
+
             <div style="display:inline-block; float:left" id="container3"></div>
 
         </div>
@@ -52,94 +55,105 @@
         </div>
     
     </div>
+    
+
+
+
+
+
+
+
 
     <!-- </div> -->
+        <script src="https://d3js.org/d3.v4.js"></script>
 
 <script>
+            //console.log(d3)
+           var margin = { top: 10, right: 30, bottom: 30, left: 60 },
+                width = 360 - margin.left - margin.right,
+                height = 300 - margin.top - margin.bottom;
 
-            var margin = { top: 10, right: 30, bottom: 30, left: 60 },
-                    width = 360 - margin.left - margin.right,
-                    height = 300 - margin.top - margin.bottom;
+            // append the svg object to the body of the page
+            var svg2 = d3.select("#container4")
+                .append("svg").attr("class", "scatterplot")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform",
+                    "translate(" + margin.left + "," + margin.top + ")");
 
-                // append the svg object to the body of the page
-                var svg2 = d3.select("#container4")
-                    .append("svg").attr("class","scatterplot")
-                    .attr("width", width + margin.left + margin.right)
-                    .attr("height", height + margin.top + margin.bottom)
-                    .append("g")
-                    .attr("transform",
-                        "translate(" + margin.left + "," + margin.top + ")");
+            //Read the data
+            // console.log("hello1")
+            d3.csv("/DataPlots copy/8Col.csv", function (data) {
+                // console.log(data)
+                // console.log("hello2")
 
-                //Read the data
-                // console.log("hello1")
-                d3.csv("/DataPlots copy/8Col.csv", function (data) {
-                    // console.log(data)
-                    // console.log("hello2")
+                // Add X axis
+                var x = d3.scaleLinear()
+                    .domain([0, 1])
+                    .range([0, width]);
+                //         console.log("hello")
 
-                    // Add X axis
-                    var x = d3.scaleLinear()
-                        .domain([0, 1])
-                        .range([0, width]);
-                    //         console.log("hello")
+                svg2.append("g")
+                    .attr("transform", "translate(0," + height + ")")
+                    .call(d3.axisBottom(x));
 
-                    svg2.append("g")
-                        .attr("transform", "translate(0," + height + ")")
-                        .call(d3.axisBottom(x));
+                // Add Y axis
+                var y = d3.scaleLinear()
+                    .domain([300, 800])
+                    .range([height, 0]);
 
-                    // Add Y axis
-                    var y = d3.scaleLinear()
-                        .domain([300, 800])
-                        .range([height, 0]);
+                svg2.append("g")
+                    .call(d3.axisLeft(y));
 
-                    svg2.append("g")
-                        .call(d3.axisLeft(y));
+                //console.log("hello")
 
-                    //console.log("hello")
+                // Color scale: give me a specie name, I return a color
+                // var color = d3.scaleOrdinal()
+                //     .domain(["setosa", "versicolor", "virginica"])
+                //     .range(["#440154ff", "#21908dff", "#fde725ff"])
 
-                    // Color scale: give me a specie name, I return a color
-                    // var color = d3.scaleOrdinal()
-                    //     .domain(["setosa", "versicolor", "virginica"])
-                    //     .range(["#440154ff", "#21908dff", "#fde725ff"])
+                // Add dots
+                var myCircle = svg2.append('g')
+                    .selectAll("circle")
+                    .data(data)
+                    .enter()
+                    .append("circle")
+                    .attr("cx", function (d) { return x(d["% Black or Hispanic"]); })
+                    .attr("cy", function (d) { return y(d["SAT Math Avg. Score"]); })
+                    .attr("r", 8)
+                    .style("fill", "#21908dff");
 
-                    // Add dots
-                    var myCircle = svg2.append('g')
-                        .selectAll("circle")
-                        .data(data)
-                        .enter()
-                        .append("circle")
-                        .attr("cx", function (d) { return x(d["% Black or Hispanic"]); })
-                        .attr("cy", function (d) { return y(d["SAT Math Avg. Score"]); })
-                        .attr("r", 8)
-                        .style("fill", "#21908dff");
+                
+                // Add brushing
+                svg2.call(d3.brush()                 // Add the brush feature using the d3.brush function
+                    .extent([[0, 0], [width, height]]) // initialise the brush area: start at 0,0 and finishes at width,height: it means I select the whole graph area
+                    .on("start brush", updateChart) // Each time the brush selection changes, trigger the 'updateChart' function
+                )
 
+                // Function that is triggered when brushing is performed
+                function updateChart() {
+                    console.log( " im tired ")
+                    extent = d3.event.selection
+                    console.log(extent+ " im tired ")
+                    myCircle.classed("selected", function (d) { return isBrushed(extent, x(d["% Black or Hispanic"]), y(d["SAT Math Avg. Score"])) })
+                }
 
-                    // Add brushing
-                    svg2.call(d3.brush()                 // Add the brush feature using the d3.brush function
-                        .extent([[0, 0], [width, height]]) // initialise the brush area: start at 0,0 and finishes at width,height: it means I select the whole graph area
-                        .on("start brush", updateChart) // Each time the brush selection changes, trigger the 'updateChart' function
-                    )
+                // A function that return TRUE or FALSE according if a dot is in the selection or not
+                function isBrushed(brush_coords, cx, cy) {
+                    var x0 = brush_coords[0][0],
+                        x1 = brush_coords[1][0],
+                        y0 = brush_coords[0][1],
+                        y1 = brush_coords[1][1];
+                    return x0 <= cx && cx <= x1 && y0 <= cy && cy <= y1;    // This return TRUE or FALSE depending on if the points is in the selected area
+                }
 
-                    // Function that is triggered when brushing is performed
-                    function updateChart() {
-                        extent = d3.event.selection
-                        myCircle.classed("selected", function (d) { return isBrushed(extent, x(d["% Black or Hispanic"]), y(d["SAT Math Avg. Score"])) })
-                    }
-
-                    // A function that return TRUE or FALSE according if a dot is in the selection or not
-                    function isBrushed(brush_coords, cx, cy) {
-                        var x0 = brush_coords[0][0],
-                            x1 = brush_coords[1][0],
-                            y0 = brush_coords[0][1],
-                            y1 = brush_coords[1][1];
-                        return x0 <= cx && cx <= x1 && y0 <= cy && cy <= y1;    // This return TRUE or FALSE depending on if the points is in the selected area
-                    }
-
-                })
+            })
 </script>
 
 
 <script>
-
+console.log(d3)
     // set the dimensions and margins of the graph  
     var margin = { top: 10, right: 30, bottom: 30, left: 40 },
         width = 350 - margin.left - margin.right,
@@ -181,6 +195,39 @@
         svg.append("g")
             .call(d3.axisLeft(y));
 
+
+
+         const tooltip = d3.select("#container3")
+            .append("div")
+            .style("opacity", 0)
+            .attr("class", "tooltip")
+            .style("background-color", "black")
+            .style("color", "white")
+            .style("border-radius", "5px")
+            .style("padding", "10px")
+
+        // A function that change this tooltip when the user hover a point.
+        // Its opacity is set to 1: we can now see it. Plus it set the text and position of tooltip depending on the datapoint (d)
+        const showTooltip = function (event, d) {
+            console.log(d)
+            tooltip.transition()
+                .duration(100)
+                .style("opacity", 1)
+            tooltip.html("Range: " + 0 + " - " + d)
+                .style("left", (event.x) / 2 - 100 + "px")
+                .style("top", (event.y) / 2 + "px")
+        }
+        const moveTooltip = function (event, d) {
+            tooltip.style("left", (event.x) / 2 - 100 + "px")
+                .style("top", (event.y) / 2 + "px")
+        }
+        // A function that change this tooltip when the leaves a point: just need to set opacity to 0 again
+        const hideTooltip = function (event, d) {
+            tooltip.transition()
+                .duration(100)
+                .style("opacity", 0);
+        }
+
         // append the bar rectangles to the svg element
         svg.selectAll("rect")
             .data(bins)
@@ -191,6 +238,9 @@
             .attr("width", function (d) { return x(d.x1) - x(d.x0) - 1; })
             .attr("height", function (d) { return height - y(d.length); })
             .style("fill", function (d) { if (d.x0 > 0.8) { return "orange" } else { return "#69b3a2" } })
+            .on("mouseover", showTooltip)
+            .on("mousemove", moveTooltip)
+            .on("mouseleave", hideTooltip)
 
         // Append a vertical line to highlight the separation
         svg.append("line")
@@ -225,7 +275,7 @@
             [-0.09, -0.49, -0.31, -0.053, -0.31, 0.68, 0.04, 1.0]
         ]
 
-        var labels = ['SAT Takers', 'Reading Score', 'Math Score', 'Enrollment', 'Disability', 'Overage', 'Minority', 'ELL'];
+        var labels = ['Takers', 'Eng', 'Math', 'Enr', 'Dis%', 'Over%', 'Min%', 'ELL'];
 
         Matrix({
             container: '#container2',
@@ -412,105 +462,76 @@
 
     </script>
 
+<script src="https://d3js.org/d3.v6.js"></script>
+ <script>
 
+        // set the dimensions and margins of the graph
+        const marginn = { top: 30, right: 10, bottom: 10, left: 0 },
+            widthh = 500 - marginn.left - marginn.right,
+            heightt = 350 - marginn.top - marginn.bottom;
 
+        // append the svg object to the body of the page
+        const svg4 = d3.select(".blabla")
+            .append("svg")
+            .attr("width", widthh + marginn.left + marginn.right)
+            .attr("height", heightt + marginn.top + marginn.bottom)
+            .append("g")
+            .attr("transform",
+                `translate(${marginn.left},${marginn.top})`);
 
+        // Parse the Data
+        d3.csv("/DataPlots copy/sortedCols.csv").then(function (data) {
 
+            // Extract the list of dimensions we want to keep in the plot. Here I keep all except the column called Species
+            dimensions = Object.keys(data[0]).filter(function (d) { return d != "" })
 
+            // For each dimension, I build a linear scale. I store all in a y object
+            const y = {}
+            for (i in dimensions) {
+                name = dimensions[i]
+                y[name] = d3.scaleLinear()
+                    .domain(d3.extent(data, function (d) { return +d[name]; }))
+                    .range([heightt, 0])
+            }
 
+            // Build the X scale -> it find the best position for each Y axis
+            x = d3.scalePoint()
+                .range([0, widthh])
+                .padding(1)
+                .domain(dimensions);
 
+            // The path function take a row of the csv as input, and return x and y coordinates of the line to draw for this raw.
+            function path(d) {
+                return d3.line()(dimensions.map(function (p) { return [x(p), y[p](d[p])]; }));
+            }
 
+            // Draw the lines
+            svg4.selectAll("myPath")
+                .data(data)
+                .join("path")
+                .attr("d", path)
+                .style("fill", "none")
+                .style("stroke", "#69b3a2")
+                .style("opacity", 0.5)
 
+            // Draw the axis:
+            svg4.selectAll("myAxis")
+                // For each dimension of the dataset I add a 'g' element:
+                .data(dimensions).enter()
+                .append("g")
+                // I translate this element to its right position on the x axis
+                .attr("transform", function (d) { return "translate(" + x(d) + ")"; })
+                // And I build the axis with the call function
+                .each(function (d) { d3.select(this).call(d3.axisLeft().scale(y[d])); })
+                // Add axis title
+                .append("text")
+                .style("text-anchor", "middle")
+                .attr("y", -9)
+                .text(function (d) { return d; })
+                .style("fill", "black")
 
-
-
- <!-- <script>
-    // set the dimensions and margins of the graph
-        //console.log("hello0")
-
-    var margin = { top: 10, right: 30, bottom: 30, left: 60 },
-        width = 360 - margin.left - margin.right,
-        height = 300 - margin.top - margin.bottom;
-
-    // append the svg object to the body of the page
-    var svg = d3.select(".dataviz_brushScatter")
-        .append("svg")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom)
-        .append("g")
-        .attr("transform",
-            "translate(" + margin.left + "," + margin.top + ")");
-
-    //Read the data
-   // console.log("hello1")
-    d3.csv("/DataPlots copy/8Col.csv", function (data) {
-       // console.log(data)
-       // console.log("hello2")
-
-        // Add X axis
-        var x = d3.scaleLinear()
-            .domain([0, 1])
-            .range([0, width]);
-       //         console.log("hello")
-
-        svg.append("g")
-            .attr("transform", "translate(0," + height + ")")
-            .call(d3.axisBottom(x));
-
-        // Add Y axis
-        var y = d3.scaleLinear()
-            .domain([300, 800])
-            .range([height, 0]);
-
-        svg.append("g")
-            .call(d3.axisLeft(y));
-
-        //console.log("hello")
-
-        // Color scale: give me a specie name, I return a color
-        // var color = d3.scaleOrdinal()
-        //     .domain(["setosa", "versicolor", "virginica"])
-        //     .range(["#440154ff", "#21908dff", "#fde725ff"])
-
-        // Add dots
-        var myCircle = svg.append('g')
-            .selectAll("circle")
-            .data(data)
-            .enter()
-            .append("circle")
-            .attr("cx", function (d) { return x(d["% Black or Hispanic"]); })
-            .attr("cy", function (d) { return y(d["SAT Math Avg. Score"]); })
-            .attr("r", 8)
-            .style("fill", "#21908dff");
-           
-
-        // Add brushing
-        svg.call(d3.brush()                 // Add the brush feature using the d3.brush function
-                .extent([[0, 0], [width, height]]) // initialise the brush area: start at 0,0 and finishes at width,height: it means I select the whole graph area
-                .on("start brush", updateChart) // Each time the brush selection changes, trigger the 'updateChart' function
-            )
-
-        // Function that is triggered when brushing is performed
-        function updateChart() {
-            extent = d3.event.selection
-            myCircle.classed("selected", function (d) { return isBrushed(extent, x(d["% Black or Hispanic"]), y(d["SAT Math Avg. Score"])) })
-        }
-
-        // A function that return TRUE or FALSE according if a dot is in the selection or not
-        function isBrushed(brush_coords, cx, cy) {
-            var x0 = brush_coords[0][0],
-                x1 = brush_coords[1][0],
-                y0 = brush_coords[0][1],
-                y1 = brush_coords[1][1];
-            return x0 <= cx && cx <= x1 && y0 <= cy && cy <= y1;    // This return TRUE or FALSE depending on if the points is in the selected area
-        }
-
-    }) 
-
-</script> -->
-
-
-
+        })
+    </script>
 
     
 </body>
